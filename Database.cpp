@@ -181,9 +181,13 @@ void Database :: userInterface(){
         cout << "ID, integers only: " << endl;
         int sID = readUserInt();
         if(sID == -1){
-          cout << "student ID cannot be -1 or containing any character that is not integer. Process abandoned. " << endl;
+          cout << "Student ID cannot be -1 or containing any character that is not integer. Process abandoned. " << endl;
           cout << endl;
-          return;
+          break;
+        }
+        if(masterStudent->getKeyWithID(sID) != NULL){
+          cout << "Student with same ID already recorded in the system, please recheck the info. Process abandoned. " << endl;
+          cout << endl;
         }
         element = to_string(sID);
         key = key + element + "&";
@@ -205,7 +209,7 @@ void Database :: userInterface(){
           cout << "Adivsor ID, integers only: " << endl;
           userInput = readUserInt();
           if(userInput == -1){
-            cout << "Process abandoned. No records added. " << endl;
+            cout << "A student record must have an associated advisor. Process abandoned. " << endl;
             cancelAdd = true;
             break;
           }
@@ -251,6 +255,10 @@ void Database :: userInterface(){
           cout << endl;
           break;
         }
+        if(masterFaculty->getKeyWithID(fID) != NULL){
+          cout << "Faculty with same ID already recorded in the system, please recheck the info. Process abandoned. " << endl;
+          cout << endl;
+        }
         element = to_string(fID);
         key = key + element + "&";
         cout << "Name, a string: " << endl;
@@ -295,9 +303,10 @@ void Database :: userInterface(){
           cout << "Cannot find the given faculty. Process abandoned. " << endl;
           break;
         }
+        int ofID = sr->advisor;
         sr->advisor = fID;
         cout << "Successfully changed the student's advisor. " << endl;
-        //update for referential integrity
+        //update for referential integrity: new advisor
         bool studentAlreadyIn = false;
         for(int i=0; i<fr->adviseesID.size(); ++i){
           if(fr->adviseesID[i] == sID){
@@ -307,6 +316,13 @@ void Database :: userInterface(){
         }
         if(!studentAlreadyIn){
           fr->adviseesID.push_back(sID);
+        }
+        //update for referential integrity: old advisor
+        FacultyRecord *ofr = new FacultyRecord();
+        ofr = masterFaculty->getKeyWithID(ofID);
+        if(fr != NULL){
+          vector<int> &adIDs = ofr->adviseesID;
+          vectorRemoveInt(adIDs, sID);
         }
         cout << "Updated corresponding faculty's information (advisees' ID) for referential integrity. " << endl;
         cout << endl;
@@ -394,6 +410,12 @@ void Database :: userInterface(){
         int fID = readUserInt();
         if(fID == -1){
           cout << "The ID should not be -1 or contains any non-digit characters. Process abandoned. " << endl;
+          cout << endl;
+          break;
+        }
+        if(masterFaculty->getKeyWithID(fID) == NULL){
+          cout << "Cannot find faculty with given id. Process abandoned. " << endl;
+          cout << endl;
           break;
         }
         int userInput;
@@ -414,8 +436,10 @@ void Database :: userInterface(){
           vectorRemoveInt(adIDs, userInput);
           //change fID in SR to new fID
           masterStudent->getKeyWithID(userInput)->advisor = fID;
-
         }
+        cout << "Successfully assigned these advisee to appointed faculty. " << endl;
+        cout << "Corresponding information (student's advisor) has been updated due to referential integrity. " << endl;
+        cout << endl;
       }
         break;
       case 16:  //clear the entire database
